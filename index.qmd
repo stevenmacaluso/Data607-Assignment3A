@@ -1,0 +1,9 @@
+---
+title: "Global Baseline Estimate - Assignment 3A"
+format: html
+editor: visual
+---
+
+## Introduction
+
+In this assignment, I will be using the data I collected on movie ratings and implementing a Global Baseline Estimate recommendation system. The Global Baseline Estimate (GBE) recommendation system is a system designed to predict missing ratings. It is a non-personalized baseline model, that accounts for user and item biases. I'm anticipating challenges when dealing with missing ratings, and ensuring the bias estimates are stable, as the dataset is small.
