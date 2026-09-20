@@ -6,4 +6,98 @@ editor: visual
 
 ## Introduction
 
-In this assignment, I will be using the data I collected on movie ratings and implementing a Global Baseline Estimate recommendation system. The Global Baseline Estimate (GBE) recommendation system is a system designed to predict missing ratings. It is a non-personalized baseline model, that accounts for user and item biases. I'm anticipating challenges when dealing with missing ratings, and ensuring the bias estimates are stable, as the dataset is small.
+In this assignment, I will be using the data I collected on movie ratings and implementing a Global Baseline Estimate recommendation system. The Global Baseline Estimate (GBE) recommendation system is a system designed to predict missing ratings. It is a non-personalized baseline model, that accounts for user and item biases. I'm anticipating my biggest challenge will be ensuring the bias estimates are stable, as the dataset is small.
+
+## Body
+
+To start, I load the tidyverse library and read in the CSV file containing the movie ratings, "movie_ratings.csv."
+
+`library(tidyverse)`
+
+`movie_ratings <- read.csv("movie_ratings.csv")`
+
+Then, I reshape the data into long form. This will make the calculations easier, as each individual critic, movie, and rating combination will be listed as a row in the dataframe.
+
+`mr_long <- movie_ratings %>%`
+
+`pivot_longer(`
+
+`cols = -movies,`
+
+`names_to = "critic",`
+
+`values_to = "rating"`
+
+`)`
+
+Once this is done, I can now calculate the global average. This is the average of all of the individual movie ratings, which we now have stored in the "rating" column of our new dataframe. Missing values will be removed for this calculation
+
+`global_avg <- mean(mr_long$rating, na.rm = TRUE)`
+
+Now that a global average has been calculated, it is time to calculate the biases. To start, I'll calculate the movie biases. The first step of this process is to calculate the average rating of each movie, which I will store in the "movie_avg" dataframe.
+
+`movie_avg <- mr_long %>%`
+
+`group_by(movies) %>%`
+
+`summarise(movie_avg = mean(rating, na.rm = TRUE), .groups = "drop")`
+
+Now I'm ready to calculate the movie biases, which is the deviation of each movie's average rating compared to the global average. This can be done using the following code:
+
+`movie_bias <- movie_avg %>%`
+
+`mutate(movie_bias = movie_avg - global_avg)`
+
+After this, I now calculate the critic biases using the same process. First, I will calculate the critic averages
+
+`critic_avg <- mr_long %>%`
+
+`group_by(critic) %>%`
+
+`summarise(critic_avg = mean(rating, na.rm = TRUE), .groups = "drop")`
+
+Now that the critic average has been calculated, I am now ready to calculate the critic biases
+
+`critic_bias <- critic_avg %>%`
+
+`mutate(critic_bias = critic_avg - global_avg)`
+
+I'm now ready to make the predictions. The predictions will be made using the following formula:
+
+***Prediction = Global Average + Movie Bias + Critic Bias***
+
+These calculations are made and stored in a new dataframe, using the following code
+
+`predictions <- mr_long %>%`
+
+`left_join(movie_bias %>%`
+
+`select(movies, movie_bias), by = "movies") %>%`
+
+`left_join(critic_bias %>% select(critic, critic_bias), by = "critic") %>%`
+
+`mutate(`
+
+`prediction = global_avg + movie_bias + critic_bias`
+
+`)`
+
+Finally, I will use these predictions to make recommendations. Some of the critics used in this dataset haven't seen all of the movies. For these cases, I will provide a recommendation based on the predicted rating. If the predicted rating is greater than or equal to 3, I will recommend the movie. If the predicted rating is less than 3, I will not recommend the movie. This is achieved through the following code
+
+`recommendations <- predictions %>%`
+
+`filter(is.na(rating)) %>%`
+
+`group_by(critic) %>%`
+
+`mutate(`
+
+`is_recommended = prediction >= 3`
+
+`)`
+
+This code creates a new dataframe titled "recommendations" which contains a column "is_recommended." This column will store a boolean value that indicates if the movie is recommended or not.
+
+## Conclusion
+
+To conclude, the Global Baseline Estimator has been implemented for the movie ratings dataset as a method to recommend movies to critics who haven't seen them before. To build upon this work, I would like to calculate how accurate these predictions are, and potentially collect even more data to see how these predictions shift.

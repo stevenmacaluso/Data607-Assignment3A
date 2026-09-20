@@ -71,7 +71,58 @@ ul.task-list li input[type="checkbox"] {
 
 <section id="introduction" class="level2">
 <h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
-<p>In this assignment, I will be using the data I collected on movie ratings and implementing a Global Baseline Estimate recommendation system. The Global Baseline Estimate (GBE) recommendation system is a system designed to predict missing ratings. It is a non-personalized baseline model, that accounts for user and item biases. I’m anticipating challenges when dealing with missing ratings, and ensuring the bias estimates are stable, as the dataset is small.</p>
+<p>In this assignment, I will be using the data I collected on movie ratings and implementing a Global Baseline Estimate recommendation system. The Global Baseline Estimate (GBE) recommendation system is a system designed to predict missing ratings. It is a non-personalized baseline model, that accounts for user and item biases. I’m anticipating my biggest challenge will be ensuring the bias estimates are stable, as the dataset is small.</p>
+</section>
+<section id="body" class="level2">
+<h2 class="anchored" data-anchor-id="body">Body</h2>
+<p>To start, I load the tidyverse library and read in the CSV file containing the movie ratings, “movie_ratings.csv.”</p>
+<p><code>library(tidyverse)</code></p>
+<p><code>movie_ratings &lt;- read.csv("movie_ratings.csv")</code></p>
+<p>Then, I reshape the data into long form. This will make the calculations easier, as each individual critic, movie, and rating combination will be listed as a row in the dataframe.</p>
+<p><code>mr_long &lt;- movie_ratings %&gt;%</code></p>
+<p><code>pivot_longer(</code></p>
+<p><code>cols = -movies,</code></p>
+<p><code>names_to = "critic",</code></p>
+<p><code>values_to = "rating"</code></p>
+<p><code>)</code></p>
+<p>Once this is done, I can now calculate the global average. This is the average of all of the individual movie ratings, which we now have stored in the “rating” column of our new dataframe. Missing values will be removed for this calculation</p>
+<p><code>global_avg &lt;- mean(mr_long$rating, na.rm = TRUE)</code></p>
+<p>Now that a global average has been calculated, it is time to calculate the biases. To start, I’ll calculate the movie biases. The first step of this process is to calculate the average rating of each movie, which I will store in the “movie_avg” dataframe.</p>
+<p><code>movie_avg &lt;- mr_long %&gt;%</code></p>
+<p><code>group_by(movies) %&gt;%</code></p>
+<p><code>summarise(movie_avg = mean(rating, na.rm = TRUE), .groups = "drop")</code></p>
+<p>Now I’m ready to calculate the movie biases, which is the deviation of each movie’s average rating compared to the global average. This can be done using the following code:</p>
+<p><code>movie_bias &lt;- movie_avg %&gt;%</code></p>
+<p><code>mutate(movie_bias = movie_avg - global_avg)</code></p>
+<p>After this, I now calculate the critic biases using the same process. First, I will calculate the critic averages</p>
+<p><code>critic_avg &lt;- mr_long %&gt;%</code></p>
+<p><code>group_by(critic) %&gt;%</code></p>
+<p><code>summarise(critic_avg = mean(rating, na.rm = TRUE), .groups = "drop")</code></p>
+<p>Now that the critic average has been calculated, I am now ready to calculate the critic biases</p>
+<p><code>critic_bias &lt;- critic_avg %&gt;%</code></p>
+<p><code>mutate(critic_bias = critic_avg - global_avg)</code></p>
+<p>I’m now ready to make the predictions. The predictions will be made using the following formula:</p>
+<p><strong><em>Prediction = Global Average + Movie Bias + Critic Bias</em></strong></p>
+<p>These calculations are made and stored in a new dataframe, using the following code</p>
+<p><code>predictions &lt;- mr_long %&gt;%</code></p>
+<p><code>left_join(movie_bias %&gt;%</code></p>
+<p><code>select(movies, movie_bias), by = "movies") %&gt;%</code></p>
+<p><code>left_join(critic_bias %&gt;% select(critic, critic_bias), by = "critic") %&gt;%</code></p>
+<p><code>mutate(</code></p>
+<p><code>prediction = global_avg + movie_bias + critic_bias</code></p>
+<p><code>)</code></p>
+<p>Finally, I will use these predictions to make recommendations. Some of the critics used in this dataset haven’t seen all of the movies. For these cases, I will provide a recommendation based on the predicted rating. If the predicted rating is greater than or equal to 3, I will recommend the movie. If the predicted rating is less than 3, I will not recommend the movie. This is achieved through the following code</p>
+<p><code>recommendations &lt;- predictions %&gt;%</code></p>
+<p><code>filter(is.na(rating)) %&gt;%</code></p>
+<p><code>group_by(critic) %&gt;%</code></p>
+<p><code>mutate(</code></p>
+<p><code>is_recommended = prediction &gt;= 3</code></p>
+<p><code>)</code></p>
+<p>This code creates a new dataframe titled “recommendations” which contains a column “is_recommended.” This column will store a boolean value that indicates if the movie is recommended or not.</p>
+</section>
+<section id="conclusion" class="level2">
+<h2 class="anchored" data-anchor-id="conclusion">Conclusion</h2>
+<p>To conclude, the Global Baseline Estimator has been implemented for the movie ratings dataset as a method to recommend movies to critics who haven’t seen them before. To build upon this work, I would like to calculate how accurate these predictions are, and potentially collect even more data to see how these predictions shift.</p>
 </section>
 
 </main>
